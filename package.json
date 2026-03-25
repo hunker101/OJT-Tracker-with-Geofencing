@@ -1,0 +1,27 @@
+{
+  "name": "ojt-tracker-with-geofencing",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node server/src/index.js",
+    "dev": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
+    "seed": "npm run seed --prefix server",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hunker101/OJT-Tracker-with-Geofencing.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/hunker101/OJT-Tracker-with-Geofencing/issues"
+  },
+  "homepage": "https://github.com/hunker101/OJT-Tracker-with-Geofencing#readme",
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
