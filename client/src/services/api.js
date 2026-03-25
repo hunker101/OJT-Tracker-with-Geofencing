@@ -29,6 +29,11 @@ export const updateAttendance = async (id, data) => {
     return res.data;
 };
 
+export const logManualSession = async (data) => {
+    const res = await api.post('/attendance/manual', data);
+    return res.data;
+};
+
 export const fetchDTR = async () => {
     const res = await api.get('/reports/dtr');
     return res.data;

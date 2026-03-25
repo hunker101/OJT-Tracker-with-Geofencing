@@ -11,7 +11,6 @@ const EditModal = ({ log, onClose, refreshData }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!editReason) return alert('Reason is required');
-
     setLoading(true);
     try {
       await updateAttendance(log._id, { clockIn, clockOut, editReason });
@@ -24,56 +23,71 @@ const EditModal = ({ log, onClose, refreshData }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all">
-        <div className="p-4 bg-gray-50 border-b flex justify-between items-center">
-            <h3 className="text-xl font-bold text-gray-800">Edit Time Record</h3>
-            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 focus:outline-none">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-            </button>
+    <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="modal-box fade-in-up">
+        {/* Header */}
+        <div style={{
+          padding: '20px 24px',
+          borderBottom: '1px solid rgba(0,0,0,0.06)',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          background: 'rgba(255,255,255,0.6)',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{
+              width: 32, height: 32,
+              background: 'linear-gradient(135deg, #60B1FF, #0084FF)',
+              borderRadius: 10,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <svg width="16" height="16" fill="none" stroke="white" strokeWidth={2} viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </div>
+            <p className="heading" style={{ fontSize: 16, margin: 0 }}>Edit Time Record</p>
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 4, borderRadius: 8, display: 'flex' }}>
+            <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
         </div>
-        
-        <form onSubmit={handleSubmit} className="p-6">
-          <div className="mb-4">
-            <label className="block text-sm font-semibold text-gray-700 mb-1">Session</label>
-            <input type="text" value={log.session} disabled className="w-full bg-gray-100 border-gray-300 rounded-lg p-2.5 text-gray-500 cursor-not-allowed font-medium" />
+
+        <form onSubmit={handleSubmit} style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {/* Session badge */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--text-muted)' }}>Session:</span>
+            <span className={`badge badge-${log.session === 'WFH' ? 'purple' : 'blue'}`}>{log.session}</span>
           </div>
 
-          <div className="mb-4">
-            <label className="block text-sm font-semibold text-gray-700 mb-1">Time In</label>
-            <input 
-              type="datetime-local" 
-              value={clockIn} 
-              onChange={e => setClockIn(e.target.value)}
-              className="w-full border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-            />
+          <div>
+            <label style={{ fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>Time In</label>
+            <input type="datetime-local" value={clockIn} onChange={e => setClockIn(e.target.value)} className="glass-input" />
           </div>
 
-          <div className="mb-4">
-            <label className="block text-sm font-semibold text-gray-700 mb-1">Time Out</label>
-            <input 
-              type="datetime-local" 
-              value={clockOut} 
-              onChange={e => setClockOut(e.target.value)}
-              className="w-full border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" 
-            />
+          <div>
+            <label style={{ fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>Time Out</label>
+            <input type="datetime-local" value={clockOut} onChange={e => setClockOut(e.target.value)} className="glass-input" />
           </div>
 
-          <div className="mb-6">
-            <label className="block text-sm font-semibold text-gray-700 mb-1">Reason for Edit <span className="text-red-500">*</span></label>
-            <textarea 
-              value={editReason} 
+          <div>
+            <label style={{ fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>
+              Reason for Edit <span style={{ color: '#EF4444' }}>*</span>
+            </label>
+            <textarea
+              value={editReason}
               onChange={e => setEditReason(e.target.value)}
               required
-              placeholder="e.g. Forgot to clock out, Holiday, etc."
-              className="w-full border-gray-300 rounded-lg p-2.5 h-24 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none"
+              placeholder="e.g. Holiday, forgot to clock out, GPS error…"
+              className="glass-input"
+              style={{ height: 90, resize: 'none' }}
             />
           </div>
 
-          <div className="flex justify-end gap-3">
-            <button type="button" onClick={onClose} className="px-5 py-2.5 bg-gray-100 text-gray-700 font-semibold rounded-lg hover:bg-gray-200 transition-colors">Cancel</button>
-            <button type="submit" disabled={loading} className={`px-5 py-2.5 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition-colors ${loading ? 'opacity-70 cursor-wait' : ''}`}>
-              {loading ? 'Saving...' : 'Save Changes'}
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', paddingTop: 4 }}>
+            <button type="button" onClick={onClose} className="btn-ghost">Cancel</button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="btn-primary"
+              style={{ opacity: loading ? 0.7 : 1, cursor: loading ? 'not-allowed' : 'pointer' }}
+            >
+              {loading ? 'Saving…' : 'Save Changes'}
             </button>
           </div>
         </form>

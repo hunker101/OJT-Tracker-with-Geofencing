@@ -3,6 +3,7 @@ import { format, isWeekend } from 'date-fns';
 import { fetchSites, fetchAttendance, fetchDTR } from '../services/api';
 import OnSiteView from '../components/OnSiteView';
 import WFHView from '../components/WFHView';
+import ManualLogModal from '../components/ManualLogModal';
 import ProgressBar from '../components/ProgressBar';
 import EditModal from '../components/EditModal';
 
@@ -11,91 +12,145 @@ const Dashboard = () => {
   const [logs, setLogs] = useState([]);
   const [dtrData, setDtrData] = useState(null);
   const [editingLog, setEditingLog] = useState(null);
+  const [showManualLog, setShowManualLog] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Determine today's mode based on day of week (Fri-Sun = WFH)
-  const isWfhDay = isWeekend(new Date()) || new Date().getDay() === 5; 
+  const isWfhDay = isWeekend(new Date()) || new Date().getDay() === 5;
 
   const loadData = async () => {
     try {
-      const [sitesRes, logsRes, dtrRes] = await Promise.all([
-        fetchSites(),
-        fetchAttendance(),
-        fetchDTR()
-      ]);
+      const [sitesRes, logsRes, dtrRes] = await Promise.all([fetchSites(), fetchAttendance(), fetchDTR()]);
       if (sitesRes.length > 0) setSite(sitesRes[0]);
       setLogs(logsRes);
       setDtrData(dtrRes);
     } catch (err) {
-      console.error("Failed to load data", err);
+      console.error('Failed to load data', err);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  useEffect(() => { loadData(); }, []);
 
   const today = format(new Date(), 'yyyy-MM-dd');
   const todayLogs = logs.filter(log => log.clockIn && format(new Date(log.clockIn), 'yyyy-MM-dd') === today);
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div></div>;
+  if (loading) return (
+    <div style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 16 }}>
+      <div className="spinner" />
+      <p style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--text-muted)', margin: 0 }}>Loading your tracker…</p>
+    </div>
+  );
 
   return (
-    <div className="max-w-4xl mx-auto p-4 md:p-6 pb-24">
-      <header className="mb-8">
-        <h1 className="text-3xl font-black text-gray-800 tracking-tight">OJT Tracker</h1>
-        <p className="text-gray-500 font-medium mt-1">
-          {format(new Date(), 'EEEE, MMMM d, yyyy')} • {isWfhDay ? 'WFH Schedule' : 'On-Site Schedule'}
-        </p>
-      </header>
+    <div className="page-layout">
+      {/* Page header */}
+      <div style={{ marginBottom: 28, marginTop: 32, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+            <span className={`badge ${isWfhDay ? 'badge-purple' : 'badge-blue'}`}>
+              {isWfhDay ? '🏠 WFH Schedule' : '📍 On-Site Schedule'}
+            </span>
+          </div>
+          <h1 className="heading" style={{ fontSize: 32, margin: '0 0 4px', color: 'var(--text-primary)', letterSpacing: '-1px' }}>
+            Good {new Date().getHours() < 12 ? 'Morning' : new Date().getHours() < 18 ? 'Afternoon' : 'Evening'} 👋
+          </h1>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: 15, color: 'var(--text-muted)', margin: 0 }}>
+            {format(new Date(), 'EEEE, MMMM d, yyyy')}
+          </p>
+        </div>
+        <button onClick={() => setShowManualLog(true)} className="btn-primary" style={{ padding: '10px 20px', fontSize: 14, marginTop: 8 }}>
+          <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth={2.2} viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Log Past Session
+        </button>
+      </div>
 
+      {/* Progress */}
       {dtrData && (
         <ProgressBar totalHours={parseFloat(dtrData.totalHours)} requiredHours={dtrData.requiredHours} />
       )}
 
-      {isWfhDay ? (
-        <WFHView site={site} todayLogs={todayLogs} refreshData={loadData} />
-      ) : (
-        <OnSiteView site={site} />
-      )}
-
-      <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden mt-8">
-        <div className="p-4 bg-gray-50 border-b border-gray-100">
-           <h2 className="text-lg font-bold text-gray-800">Recent Activity</h2>
-        </div>
-        <div className="divide-y divide-gray-100">
-          {logs.slice(0, 10).map(log => (
-            <div key={log._id} className="p-4 flex flex-col sm:flex-row justify-between sm:items-center hover:bg-gray-50 transition-colors gap-3">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                    <span className="font-semibold text-gray-800">{format(new Date(log.clockIn), 'MMM d')}</span>
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${log.session === 'WFH' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
-                    {log.session}
-                    </span>
-                    {log.edited && <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full font-bold">Edited</span>}
-                </div>
-                <div className="text-sm text-gray-600 font-medium">
-                  {format(new Date(log.clockIn), 'h:mm a')} — {log.clockOut ? format(new Date(log.clockOut), 'h:mm a') : 'Active'}
-                  {log.durationMinutes > 0 && <span className="text-gray-400 ml-2">({(log.durationMinutes / 60).toFixed(1)}h)</span>}
-                </div>
-              </div>
-              <button 
-                onClick={() => setEditingLog(log)}
-                className="text-sm text-blue-600 font-semibold hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-4 py-2 rounded-lg transition-colors self-start sm:self-auto"
-              >
-                Edit Time
-              </button>
+      {/* Today's summary row */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginBottom: 20 }}>
+        {[
+          { label: 'Today', value: `${(todayLogs.reduce((a, l) => a + (l.durationMinutes || 0), 0) / 60).toFixed(1)} hrs`, icon: '⏱', color: '#0084FF' },
+          { label: 'Sessions', value: todayLogs.length, icon: '📋', color: '#7C3AED' },
+          { label: 'Mode', value: isWfhDay ? 'WFH' : 'On-site', icon: isWfhDay ? '🏠' : '📍', color: isWfhDay ? '#7C3AED' : '#0084FF' },
+        ].map(({ label, value, icon, color }) => (
+          <div key={label} className="glass-card" style={{ padding: '18px 20px' }}>
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.8, color: 'var(--text-muted)', margin: '0 0 8px' }}>{label}</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 20 }}>{icon}</span>
+              <span className="heading" style={{ fontSize: 22, color }}>{value}</span>
             </div>
-          ))}
-          {logs.length === 0 && <div className="p-8 text-center text-gray-500">No activity logs yet.</div>}
-        </div>
+          </div>
+        ))}
       </div>
 
-      {editingLog && (
-        <EditModal log={editingLog} onClose={() => setEditingLog(null)} refreshData={loadData} />
-      )}
+      {/* Tracker view (on-site or WFH) */}
+      {isWfhDay
+        ? <WFHView site={site} todayLogs={todayLogs} refreshData={loadData} />
+        : <OnSiteView site={site} />
+      }
+
+      {/* Recent Activity */}
+      <div className="glass-card" style={{ overflow: 'hidden' }}>
+        <div style={{
+          padding: '16px 24px', borderBottom: '1px solid rgba(0,0,0,0.05)',
+          background: 'rgba(255,255,255,0.5)', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        }}>
+          <p className="heading" style={{ fontSize: 15, margin: 0 }}>Recent Activity</p>
+          <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--text-muted)' }}>{logs.length} sessions total</span>
+        </div>
+
+        {logs.length === 0 ? (
+          <div style={{ padding: '48px 24px', textAlign: 'center' }}>
+            <span style={{ fontSize: 36, display: 'block', marginBottom: 12 }}>📭</span>
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--text-muted)', margin: 0 }}>No activity logged yet. Start your first session!</p>
+          </div>
+        ) : (
+          <div>
+            {logs.slice(0, 10).map((log, i) => (
+              <div key={log._id} style={{
+                padding: '14px 24px',
+                borderBottom: i < 9 ? '1px solid rgba(0,0,0,0.04)' : 'none',
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                transition: 'background 0.15s',
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,132,255,0.02)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                  <div style={{
+                    width: 36, height: 36, borderRadius: 10,
+                    background: log.session === 'WFH' ? 'rgba(124,58,237,0.1)' : 'rgba(0,132,255,0.1)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0,
+                  }}>
+                    {log.session === 'WFH' ? '💻' : log.session === 'AM' ? '🌅' : '🌆'}
+                  </div>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
+                      <span style={{ fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 14, color: 'var(--text-primary)' }}>
+                        {format(new Date(log.clockIn), 'MMM d, yyyy')}
+                      </span>
+                      <span className={`badge badge-${log.session === 'WFH' ? 'purple' : 'blue'}`} style={{ fontSize: 10, padding: '1px 7px' }}>{log.session}</span>
+                      {log.edited && <span className="badge badge-yellow" style={{ fontSize: 10, padding: '1px 7px' }}>Edited</span>}
+                    </div>
+                    <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--text-muted)' }}>
+                      {format(new Date(log.clockIn), 'h:mm a')} → {log.clockOut ? format(new Date(log.clockOut), 'h:mm a') : <span style={{ color: '#22C55E' }}>Active</span>}
+                      {log.durationMinutes > 0 && <span style={{ marginLeft: 6, color: 'var(--blue-primary-solid)', fontWeight: 600 }}>{(log.durationMinutes / 60).toFixed(1)}h</span>}
+                    </span>
+                  </div>
+                </div>
+                <button onClick={() => setEditingLog(log)} className="btn-ghost" style={{ padding: '7px 14px', fontSize: 12 }}>Edit</button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {editingLog && <EditModal log={editingLog} onClose={() => setEditingLog(null)} refreshData={loadData} />}
+      {showManualLog && <ManualLogModal site={site} onClose={() => setShowManualLog(false)} refreshData={loadData} />}
     </div>
   );
 };

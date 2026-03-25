@@ -72,6 +72,50 @@ router.post('/clock-out', async (req, res) => {
   }
 });
 
+// POST /api/attendance/manual (Add a full past session manually)
+router.post('/manual', async (req, res) => {
+  try {
+    const { siteId, workMode, session, clockIn, clockOut, lunchDeductMins, note } = req.body;
+
+    if (!clockIn || !clockOut) {
+      return res.status(400).json({ message: 'Clock-in and clock-out times are required.' });
+    }
+    if (!session) {
+      return res.status(400).json({ message: 'Session type is required.' });
+    }
+
+    const clockInDate  = new Date(clockIn);
+    const clockOutDate = new Date(clockOut);
+
+    if (clockOutDate <= clockInDate) {
+      return res.status(400).json({ message: 'Clock-out must be after clock-in.' });
+    }
+
+    let duration = differenceInMinutes(clockOutDate, clockInDate);
+
+    // Apply lunch break deduction (1hr) — either from client or auto-detect
+    const deduct = typeof lunchDeductMins === 'number' ? lunchDeductMins : 0;
+    duration = Math.max(duration - deduct, 0);
+
+    const newLog = new Attendance({
+      siteId,
+      workMode,
+      session,
+      clockIn: clockInDate,
+      clockOut: clockOutDate,
+      durationMinutes: duration,
+      method: 'manual',
+      edited: true,
+      editReason: note || 'Manual past entry',
+    });
+
+    const saved = await newLog.save();
+    res.status(201).json(saved);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 // PATCH /api/attendance/:id (Manual Edit)
 router.patch('/:id', async (req, res) => {
   try {

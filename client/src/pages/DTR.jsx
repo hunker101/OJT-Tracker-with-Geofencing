@@ -12,7 +12,7 @@ const DTR = () => {
         const res = await fetchDTR();
         setDtrData(res);
       } catch (err) {
-        console.error("Failed to load DTR", err);
+        console.error('Failed to load DTR', err);
       } finally {
         setLoading(false);
       }
@@ -22,83 +22,121 @@ const DTR = () => {
 
   const exportCSV = () => {
     if (!dtrData) return;
-    
-    const headers = ['Date', 'Mode', 'AM In', 'AM Out', 'PM In', 'PM Out', 'Daily Hrs', 'Total Hrs'];
+    const headers = ['Date', 'Mode', 'AM In', 'AM Out', 'PM/WFH In', 'PM/WFH Out', 'Daily Hrs', 'Total Hrs'];
     const rows = dtrData.dtr.map(day => [
       day.date,
       day.isHoliday ? 'HOLIDAY' : day.mode || '-',
       day.amIn ? format(new Date(day.amIn), 'HH:mm') : '-',
       day.amOut ? format(new Date(day.amOut), 'HH:mm') : '-',
-      day.pmIn ? format(new Date(day.pmIn), 'HH:mm') : '-',
-      day.pmOut ? format(new Date(day.pmOut), 'HH:mm') : '-',
+      day.pmIn ? format(new Date(day.pmIn), 'HH:mm') : day.wfhIn ? format(new Date(day.wfhIn), 'HH:mm') : '-',
+      day.pmOut ? format(new Date(day.pmOut), 'HH:mm') : day.wfhOut ? format(new Date(day.wfhOut), 'HH:mm') : '-',
       day.dailyMinutes ? (day.dailyMinutes / 60).toFixed(2) : '0',
-      day.runningTotalMinutes ? (day.runningTotalMinutes / 60).toFixed(2) : '0'
+      day.runningTotalMinutes ? (day.runningTotalMinutes / 60).toFixed(2) : '0',
     ]);
-
-    const csvContent = "data:text/csv;charset=utf-8," 
-      + [headers.join(','), ...rows.map(e => e.join(','))].join("\n");
-
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `DTR_Export_${format(new Date(), 'yyyy-MM-dd')}.csv`);
+    const csv = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const link = document.createElement('a');
+    link.setAttribute('href', encodeURI(csv));
+    link.setAttribute('download', `DTR_${format(new Date(), 'yyyy-MM-dd')}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
 
-  if (loading) return <div className="p-8 text-center text-gray-500">Loading DTR Data...</div>;
+  if (loading) return (
+    <div style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 16 }}>
+      <div className="spinner" />
+      <p style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--text-muted)', margin: 0 }}>Loading DTR…</p>
+    </div>
+  );
+
+  const totalHours = parseFloat(dtrData?.totalHours || 0);
+  const required = dtrData?.requiredHours || 486;
 
   return (
-    <div className="max-w-6xl mx-auto p-4 md:p-6 pb-24">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-        <div>
-            <h1 className="text-3xl font-black text-gray-800 tracking-tight">Daily Time Record</h1>
-            <p className="text-gray-500 font-medium mt-1">Total Rendered: {dtrData?.totalHours || 0} / {dtrData?.requiredHours} hrs</p>
-        </div>
-        <button 
-          onClick={exportCSV}
-          className="bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 px-6 rounded-lg shadow-md transition-colors flex items-center gap-2"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-          Export CSV
-        </button>
+    <div className="page-layout">
+      {/* Header */}
+      <div style={{ marginTop: 32, marginBottom: 28 }}>
+        <h1 className="heading" style={{ fontSize: 32, margin: '0 0 4px', letterSpacing: '-1px' }}>Daily Time Record</h1>
+        <p style={{ fontFamily: 'var(--font-body)', fontSize: 15, color: 'var(--text-muted)', margin: 0 }}>
+          Official OJT Attendance Log · {totalHours.toFixed(1)} / {required} hrs rendered
+        </p>
       </div>
 
-      <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-gray-600">
-            <thead className="text-xs text-gray-700 uppercase bg-gray-50 border-b border-gray-200">
+      {/* Summary cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 24 }}>
+        {[
+          { label: 'Total Rendered', value: `${totalHours.toFixed(1)} hrs`, color: '#0084FF' },
+          { label: 'Remaining', value: `${Math.max(required - totalHours, 0).toFixed(1)} hrs`, color: '#FF801E' },
+          { label: 'Completion', value: `${Math.min((totalHours / required) * 100, 100).toFixed(1)}%`, color: '#10B981' },
+          { label: 'Days Logged', value: dtrData?.dtr?.length || 0, color: '#7C3AED' },
+        ].map(({ label, value, color }) => (
+          <div key={label} className="glass-card" style={{ padding: '18px 20px' }}>
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.8, color: 'var(--text-muted)', margin: '0 0 6px' }}>{label}</p>
+            <span className="heading" style={{ fontSize: 22, color }}>{value}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Table card */}
+      <div className="glass-card" style={{ overflow: 'hidden' }}>
+        <div style={{
+          padding: '16px 24px', borderBottom: '1px solid rgba(0,0,0,0.05)',
+          background: 'rgba(255,255,255,0.5)',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        }}>
+          <p className="heading" style={{ fontSize: 15, margin: 0 }}>Attendance Logs</p>
+          <button onClick={exportCSV} className="btn-primary" style={{ padding: '8px 18px', fontSize: 13 }}>
+            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth={2.2} viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Export CSV
+          </button>
+        </div>
+
+        <div style={{ overflowX: 'auto' }}>
+          <table className="glass-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
               <tr>
-                <th scope="col" className="px-6 py-4">Date</th>
-                <th scope="col" className="px-6 py-4">Mode</th>
-                <th scope="col" className="px-6 py-4">AM In</th>
-                <th scope="col" className="px-6 py-4">AM Out</th>
-                <th scope="col" className="px-6 py-4">PM / WFH In</th>
-                <th scope="col" className="px-6 py-4">PM / WFH Out</th>
-                <th scope="col" className="px-6 py-4">Daily Hrs</th>
-                <th scope="col" className="px-6 py-4 font-bold text-gray-800">Total Hrs</th>
+                {['Date', 'Mode', 'AM In', 'AM Out', 'PM / WFH In', 'PM / WFH Out', 'Daily Hrs', 'Running Total'].map(h => (
+                  <th key={h} style={{ textAlign: 'left', whiteSpace: 'nowrap' }}>{h}</th>
+                ))}
               </tr>
             </thead>
             <tbody>
-              {dtrData?.dtr.map((day, idx) => (
-                <tr key={idx} className={`border-b border-gray-100 hover:bg-gray-50 ${day.isHoliday ? 'bg-orange-50/50' : ''}`}>
-                  <td className="px-6 py-4 font-semibold text-gray-800">{format(new Date(day.date), 'MMM dd (EEE)')}</td>
-                  <td className="px-6 py-4">
-                      {day.isHoliday ? <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded font-bold">HOLIDAY</span> : 
-                       day.mode === 'onsite' ? <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded font-bold">On-Site</span> :
-                       day.mode === 'wfh' ? <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded font-bold">WFH</span> : '-'}
+              {dtrData?.dtr?.length ? dtrData.dtr.map((day, i) => (
+                <tr key={i} style={{ background: day.isHoliday ? 'rgba(255,128,30,0.03)' : 'transparent' }}>
+                  <td style={{ fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
+                    {format(new Date(day.date), 'MMM dd (EEE)')}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">{day.amIn ? format(new Date(day.amIn), 'h:mm a') : '-'}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">{day.amOut ? format(new Date(day.amOut), 'h:mm a') : '-'}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">{day.pmIn ? format(new Date(day.pmIn), 'h:mm a') : day.wfhIn ? format(new Date(day.wfhIn), 'h:mm a') : '-'}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">{day.pmOut ? format(new Date(day.pmOut), 'h:mm a') : day.wfhOut ? format(new Date(day.wfhOut), 'h:mm a') : '-'}</td>
-                  <td className="px-6 py-4 font-medium text-blue-600">{day.dailyMinutes ? (day.dailyMinutes / 60).toFixed(2) : '-'}</td>
-                  <td className="px-6 py-4 font-black text-gray-800">{day.runningTotalMinutes ? (day.runningTotalMinutes / 60).toFixed(2) : '-'}</td>
+                  <td>
+                    {day.isHoliday
+                      ? <span className="badge badge-orange">Holiday</span>
+                      : day.mode === 'onsite'
+                      ? <span className="badge badge-blue">On-Site</span>
+                      : day.mode === 'wfh'
+                      ? <span className="badge badge-purple">WFH</span>
+                      : '-'}
+                  </td>
+                  <td style={{ whiteSpace: 'nowrap' }}>{day.amIn ? format(new Date(day.amIn), 'h:mm a') : '—'}</td>
+                  <td style={{ whiteSpace: 'nowrap' }}>{day.amOut ? format(new Date(day.amOut), 'h:mm a') : '—'}</td>
+                  <td style={{ whiteSpace: 'nowrap' }}>
+                    {day.pmIn ? format(new Date(day.pmIn), 'h:mm a') : day.wfhIn ? format(new Date(day.wfhIn), 'h:mm a') : '—'}
+                  </td>
+                  <td style={{ whiteSpace: 'nowrap' }}>
+                    {day.pmOut ? format(new Date(day.pmOut), 'h:mm a') : day.wfhOut ? format(new Date(day.wfhOut), 'h:mm a') : '—'}
+                  </td>
+                  <td style={{ fontWeight: 600, color: 'var(--blue-primary-solid)' }}>
+                    {day.dailyMinutes ? (day.dailyMinutes / 60).toFixed(2) : '—'}
+                  </td>
+                  <td style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, color: 'var(--text-primary)' }}>
+                    {day.runningTotalMinutes ? (day.runningTotalMinutes / 60).toFixed(2) : '—'}
+                  </td>
                 </tr>
-              ))}
-              {(!dtrData || dtrData.dtr.length === 0) && (
-                  <tr><td colSpan="8" className="px-6 py-8 text-center text-gray-500">No records found.</td></tr>
+              )) : (
+                <tr>
+                  <td colSpan={8} style={{ textAlign: 'center', padding: '48px 24px', color: 'var(--text-muted)' }}>
+                    <span style={{ fontSize: 32, display: 'block', marginBottom: 10 }}>📋</span>
+                    No attendance records found.
+                  </td>
+                </tr>
               )}
             </tbody>
           </table>

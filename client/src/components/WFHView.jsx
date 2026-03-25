@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { clockIn, clockOut } from '../services/api';
 
 const WFHView = ({ site, todayLogs, refreshData }) => {
@@ -11,12 +11,7 @@ const WFHView = ({ site, todayLogs, refreshData }) => {
   const handleStartWork = async () => {
     setLoading(true);
     try {
-      await clockIn({
-        siteId: site._id,
-        workMode: 'wfh',
-        session: 'WFH',
-        method: 'manual',
-      });
+      await clockIn({ siteId: site._id, workMode: 'wfh', session: 'WFH', method: 'manual' });
       refreshData();
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to start work');
@@ -36,39 +31,73 @@ const WFHView = ({ site, todayLogs, refreshData }) => {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden mb-6">
-      <div className="p-4 bg-purple-50 border-b border-purple-100 flex justify-between items-center">
-        <h2 className="text-lg font-bold text-purple-800">🏠 Work From Home</h2>
-        <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-semibold">
-          Manual Tracking
-        </span>
+    <div className="glass-card fade-in-up" style={{ overflow: 'hidden', marginBottom: 20 }}>
+      {/* Header */}
+      <div style={{
+        padding: '18px 24px',
+        borderBottom: '1px solid rgba(0,0,0,0.05)',
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        background: 'rgba(255,255,255,0.5)',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{
+            width: 32, height: 32,
+            background: 'linear-gradient(135deg, #A78BFA, #7C3AED)',
+            borderRadius: 10,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 2px 8px rgba(124,58,237,0.3)',
+          }}>
+            <span style={{ fontSize: 16 }}>💻</span>
+          </div>
+          <div>
+            <p className="heading" style={{ fontSize: 15, margin: 0 }}>Work From Home</p>
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--text-muted)', margin: 0 }}>Fri – Sun · Manual tracking · 8:00–17:00</p>
+          </div>
+        </div>
+        <span className="badge badge-purple">Manual</span>
       </div>
 
-      <div className="p-8 flex flex-col items-center justify-center text-center">
-        <div className="w-24 h-24 bg-purple-100 rounded-full flex items-center justify-center mb-6">
-          <span className="text-4xl">💻</span>
+      {/* Body */}
+      <div style={{ padding: '48px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 16 }}>
+        {/* Big status orb */}
+        <div style={{
+          width: 100, height: 100,
+          borderRadius: '50%',
+          background: isCompleted
+            ? 'linear-gradient(135deg, #6EE7B7, #10B981)'
+            : isClockedIn
+            ? 'linear-gradient(135deg, #60B1FF, #0084FF)'
+            : 'rgba(0,0,0,0.05)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 40,
+          boxShadow: isCompleted ? '0 8px 32px rgba(16,185,129,0.3)' : isClockedIn ? '0 8px 32px rgba(0,132,255,0.3)' : 'none',
+          transition: 'all 0.5s ease',
+        }}>
+          {isCompleted ? '🎉' : isClockedIn ? '💼' : '🏠'}
         </div>
-        
-        <h3 className="text-xl font-bold text-gray-800 mb-2">
-          {isCompleted ? 'Work Completed for Today 🎉' : isClockedIn ? 'You are currently working' : 'Ready to start your shift?'}
-        </h3>
-        
-        <p className="text-gray-500 mb-8 max-w-sm">
-          WFH hours (Fri-Sun) require manual clock-in and clock-out. Ensure you complete your required hours.
-        </p>
+
+        <div>
+          <p className="heading" style={{ fontSize: 20, margin: '0 0 6px' }}>
+            {isCompleted ? 'Work Completed!' : isClockedIn ? 'Currently Working' : 'Ready to Start?'}
+          </p>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--text-muted)', margin: 0, maxWidth: 340 }}>
+            {isCompleted
+              ? "Great job! You've completed today's WFH shift. See you tomorrow!"
+              : isClockedIn
+              ? 'Your WFH session is active. Stay focused and hit your 8-hour target.'
+              : 'Click "Start Work" to begin your WFH session for today.'}
+          </p>
+        </div>
 
         {!isCompleted && (
-            <button
+          <button
             onClick={isClockedIn ? handleEndWork : handleStartWork}
             disabled={loading}
-            className={`
-                px-8 py-4 rounded-full font-bold text-lg text-white shadow-lg transition-all
-                ${loading ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105'}
-                ${isClockedIn ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'}
-            `}
-            >
-            {loading ? 'Processing...' : isClockedIn ? '⏹ End Work' : '▶ Start Work'}
-            </button>
+            className={isClockedIn ? 'btn-danger' : 'btn-primary'}
+            style={{ padding: '14px 36px', fontSize: 16, opacity: loading ? 0.6 : 1, cursor: loading ? 'not-allowed' : 'pointer' }}
+          >
+            {loading ? 'Processing…' : isClockedIn ? '⏹ End Work' : '▶ Start Work'}
+          </button>
         )}
       </div>
     </div>

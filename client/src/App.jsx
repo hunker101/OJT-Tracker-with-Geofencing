@@ -5,27 +5,57 @@ import DTR from './pages/DTR';
 
 const Navbar = () => {
   const location = useLocation();
-  const isActive = (path) => location.pathname === path ? 'bg-blue-700 text-white' : 'text-blue-100 hover:bg-blue-700 hover:text-white';
 
   return (
-    <nav className="bg-blue-600 shadow-lg">
-      <div className="max-w-6xl mx-auto px-4">
-        <div className="flex justify-between items-center h-16">
-          <div className="flex items-center">
-            <span className="text-white font-black text-xl tracking-tight flex items-center gap-2">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                OJT Tracker
-            </span>
+    <nav className="navbar">
+      <div className="navbar-inner">
+        {/* Logo */}
+        <Link to="/" style={{
+          fontFamily: 'var(--font-heading)',
+          fontWeight: 800,
+          fontSize: '17px',
+          color: 'var(--text-primary)',
+          textDecoration: 'none',
+          letterSpacing: '-0.5px',
+          marginRight: '8px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+        }}>
+          <div style={{
+            width: 30, height: 30,
+            background: 'linear-gradient(135deg, #60B1FF 0%, #0084FF 100%)',
+            borderRadius: 9,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.3), 0 2px 8px rgba(0,132,255,0.35)',
+            flexShrink: 0,
+          }}>
+            <svg width="16" height="16" fill="none" stroke="white" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
+            </svg>
           </div>
-          <div className="flex space-x-1">
-            <Link to="/" className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${isActive('/')}`}>
-              Dashboard
-            </Link>
-            <Link to="/dtr" className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${isActive('/dtr')}`}>
-              DTR Report
-            </Link>
-          </div>
-        </div>
+          OJT Tracker
+        </Link>
+
+        {/* Divider */}
+        <div style={{ width: 1, height: 20, background: 'rgba(0,0,0,0.1)', margin: '0 4px' }} />
+
+        {/* Nav links */}
+        {[{ to: '/', label: 'Dashboard' }, { to: '/dtr', label: 'DTR Report' }].map(({ to, label }) => (
+          <Link key={to} to={to} style={{
+            fontFamily: 'var(--font-body)',
+            fontWeight: 500,
+            fontSize: '14px',
+            textDecoration: 'none',
+            padding: '7px 14px',
+            borderRadius: '10px',
+            color: location.pathname === to ? 'var(--blue-primary-solid)' : 'var(--text-secondary)',
+            background: location.pathname === to ? 'rgba(0,132,255,0.08)' : 'transparent',
+            transition: 'all 0.2s ease',
+          }}>
+            {label}
+          </Link>
+        ))}
       </div>
     </nav>
   );
@@ -34,9 +64,12 @@ const Navbar = () => {
 function App() {
   return (
     <Router>
-      <div className="min-h-screen bg-gray-50 font-sans">
+      {/* Background glow layer */}
+      <div className="bg-glow" />
+
+      <div style={{ position: 'relative', zIndex: 1, minHeight: '100vh' }}>
         <Navbar />
-        <main className="py-8">
+        <main>
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/dtr" element={<DTR />} />
