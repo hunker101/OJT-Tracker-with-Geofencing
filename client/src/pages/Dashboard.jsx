@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { format, isWeekend } from 'date-fns';
-import { fetchSites, fetchAttendance, fetchDTR } from '../services/api';
+import { fetchSites, fetchAttendance, fetchDTR, fetchActiveAttendance, deleteAttendance } from '../services/api';
 import OnSiteView from '../components/OnSiteView';
 import WFHView from '../components/WFHView';
 import ManualLogModal from '../components/ManualLogModal';
@@ -14,19 +14,37 @@ const Dashboard = () => {
   const [editingLog, setEditingLog] = useState(null);
   const [showManualLog, setShowManualLog] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [activeLogId, setActiveLogId] = useState(null);
 
   const isWfhDay = isWeekend(new Date()) || new Date().getDay() === 5;
 
   const loadData = async () => {
     try {
-      const [sitesRes, logsRes, dtrRes] = await Promise.all([fetchSites(), fetchAttendance(), fetchDTR()]);
-      if (sitesRes.length > 0) setSite(sitesRes[0]);
+      const [sitesRes, logsRes, dtrRes, activeRes] = await Promise.all([fetchSites(), fetchAttendance(), fetchDTR(), fetchActiveAttendance()]);
+      if (sitesRes.length > 0) {
+        // Use the site picked on the Sites page, if it still exists;
+        // otherwise fall back to the first site (previous behaviour).
+        const storedId = localStorage.getItem('ojt_active_site_id');
+        const storedSite = storedId ? sitesRes.find((s) => s._id === storedId) : null;
+        setSite(storedSite || sitesRes[0]);
+      }
       setLogs(logsRes);
       setDtrData(dtrRes);
+      setActiveLogId(activeRes && activeRes._id ? activeRes._id : null);
     } catch (err) {
       console.error('Failed to load data', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteLog = async (log) => {
+    if (!window.confirm(`Delete the ${log.session} session from ${format(new Date(log.clockIn), 'MMM d, yyyy h:mm a')}? This cannot be undone.`)) return;
+    try {
+      await deleteAttendance(log._id);
+      loadData();
+    } catch (err) {
+      alert(err.response?.data?.message || err.response?.data?.error || 'Failed to delete session');
     }
   };
 
@@ -90,7 +108,7 @@ const Dashboard = () => {
       {/* Tracker view (on-site or WFH) */}
       {isWfhDay
         ? <WFHView site={site} todayLogs={todayLogs} refreshData={loadData} />
-        : <OnSiteView site={site} />
+        : <OnSiteView site={site} activeLogId={activeLogId} />
       }
 
       {/* Recent Activity */}
@@ -142,7 +160,10 @@ const Dashboard = () => {
                     </span>
                   </div>
                 </div>
-                <button onClick={() => setEditingLog(log)} className="btn-ghost" style={{ padding: '7px 14px', fontSize: 12 }}>Edit</button>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button onClick={() => setEditingLog(log)} className="btn-ghost" style={{ padding: '7px 14px', fontSize: 12 }}>Edit</button>
+                  <button onClick={() => handleDeleteLog(log)} className="btn-ghost" style={{ padding: '7px 14px', fontSize: 12, color: '#DC2626' }}>Delete</button>
+                </div>
               </div>
             ))}
           </div>

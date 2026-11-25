@@ -3,8 +3,8 @@ import { useGeofence } from '../hooks/useGeofence';
 import { MapContainer, TileLayer, Circle, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 
-const OnSiteView = ({ site }) => {
-  const { location, isInside, session, error } = useGeofence(site);
+const OnSiteView = ({ site, activeLogId }) => {
+  const { location, isInside, session, error } = useGeofence(site, activeLogId);
 
   if (!site) return (
     <div className="glass-card" style={{ padding: 32, textAlign: 'center', color: 'var(--text-muted)', marginBottom: 20 }}>

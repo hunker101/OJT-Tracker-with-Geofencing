@@ -2,6 +2,8 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import Dashboard from './pages/Dashboard';
 import DTR from './pages/DTR';
+import Sites from './pages/Sites';
+import Holidays from './pages/Holidays';
 
 const Navbar = () => {
   const location = useLocation();
@@ -41,7 +43,7 @@ const Navbar = () => {
         <div style={{ width: 1, height: 20, background: 'rgba(0,0,0,0.1)', margin: '0 4px' }} />
 
         {/* Nav links */}
-        {[{ to: '/', label: 'Dashboard' }, { to: '/dtr', label: 'DTR Report' }].map(({ to, label }) => (
+        {[{ to: '/', label: 'Dashboard' }, { to: '/dtr', label: 'DTR Report' }, { to: '/sites', label: 'Sites' }, { to: '/holidays', label: 'Holidays' }].map(({ to, label }) => (
           <Link key={to} to={to} style={{
             fontFamily: 'var(--font-body)',
             fontWeight: 500,
@@ -73,6 +75,8 @@ function App() {
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/dtr" element={<DTR />} />
+            <Route path="/sites" element={<Sites />} />
+            <Route path="/holidays" element={<Holidays />} />
           </Routes>
         </main>
       </div>

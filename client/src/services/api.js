@@ -9,8 +9,38 @@ export const fetchSites = async () => {
     return res.data;
 };
 
+export const fetchSite = async (id) => {
+    const res = await api.get(`/sites/${id}`);
+    return res.data;
+};
+
+export const addSite = async (data) => {
+    const res = await api.post('/sites', data);
+    return res.data;
+};
+
+export const updateSite = async (id, data) => {
+    const res = await api.put(`/sites/${id}`, data);
+    return res.data;
+};
+
+export const deleteSite = async (id) => {
+    const res = await api.delete(`/sites/${id}`);
+    return res.data;
+};
+
 export const fetchAttendance = async () => {
     const res = await api.get('/attendance');
+    return res.data;
+};
+
+export const fetchActiveAttendance = async () => {
+    const res = await api.get('/attendance/active');
+    return res.data;
+};
+
+export const deleteAttendance = async (id) => {
+    const res = await api.delete(`/attendance/${id}`);
     return res.data;
 };
 
@@ -46,6 +76,11 @@ export const fetchHolidays = async () => {
 
 export const addHoliday = async (data) => {
     const res = await api.post('/holidays', data);
+    return res.data;
+};
+
+export const deleteHoliday = async (id) => {
+    const res = await api.delete(`/holidays/${id}`);
     return res.data;
 };
 
